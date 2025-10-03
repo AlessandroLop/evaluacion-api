@@ -3,7 +3,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const { apiReference } = require('@scalar/express-api-reference');
 
 // Importar middlewares y rutas
 const errorHandler = require('./middlewares/errorHandler');
@@ -52,18 +51,25 @@ app.get('/', (req, res) => {
   });
 });
 
-// Documentación de la API con Scalar
-app.use('/docs', apiReference({
-  theme: 'purple',
-  spec: {
-    content: swaggerSpec
-  },
-  metaData: {
-    title: 'API de Evaluación de Catedráticos - Documentación',
-    description: 'Documentación interactiva para la API REST de evaluación de catedráticos',
-    ogDescription: 'API REST completa para gestionar evaluaciones anónimas de catedráticos universitarios'
-  }
-}));
+// Documentación de la API (versión simple para Vercel)
+app.get('/docs', (req, res) => {
+  res.json({
+    message: '📚 Documentación de la API de Evaluación de Catedráticos',
+    version: '1.0.0',
+    endpoints: {
+      "GET /": "Información general de la API",
+      "GET /api-docs.json": "Especificación OpenAPI 3.0",
+      "GET /api/evaluaciones/health": "Estado de salud de la API",
+      "GET /api/evaluaciones/catedraticos": "Lista de catedráticos disponibles",
+      "GET /api/evaluaciones/catedraticos/:id/cursos": "Cursos de un catedrático específico",
+      "GET /api/evaluaciones/preguntas": "Preguntas del formulario de evaluación",
+      "POST /api/evaluaciones": "Crear nueva evaluación",
+      "GET /api/evaluaciones/estadisticas": "Estadísticas generales de evaluaciones"
+    },
+    swagger: "/api-docs.json",
+    note: "Para documentación interactiva completa, consulta el archivo README.md del repositorio"
+  });
+});
 
 // Endpoint para obtener la especificación OpenAPI en JSON
 app.get('/api-docs.json', (req, res) => {
