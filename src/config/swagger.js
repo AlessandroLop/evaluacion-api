@@ -15,8 +15,10 @@ const options = {
     },
     servers: [
       {
-        url: `http://localhost:${process.env.PORT || 3001}`,
-        description: 'Servidor de desarrollo'
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://https://evaluacion-api.vercel.app/'
+          : `http://localhost:${process.env.PORT || 3001}`,
+        description: process.env.NODE_ENV === 'production' ? 'Servidor de producción (Vercel)' : 'Servidor de desarrollo'
       }
     ],
     tags: [
@@ -34,7 +36,11 @@ const options = {
       }
     ]
   },
-  apis: ['./src/routes/*.js'], // Paths a archivos que contienen definiciones OpenAPI
+  apis: [
+    process.env.NODE_ENV === 'production' 
+      ? './src/routes/*.js'
+      : './src/routes/*.js'
+  ], // Paths a archivos que contienen definiciones OpenAPI
 };
 
 const specs = swaggerJsdoc(options);

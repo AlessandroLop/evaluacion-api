@@ -54,23 +54,14 @@ app.get('/', (req, res) => {
 
 // Documentación de la API con Swagger UI
 const swaggerUiOptions = {
-  customCss: `
-    .swagger-ui .topbar { display: none; }
-    .swagger-ui .info { margin: 20px 0; }
-    .swagger-ui .info .title { color: #7c3aed; font-size: 2rem; }
-    .swagger-ui .scheme-container { background: #f8fafc; padding: 20px; border-radius: 8px; }
-  `,
   customSiteTitle: "API de Evaluación de Catedráticos - Documentación",
-  customCssUrl: null,
   swaggerOptions: {
-    persistAuthorization: true,
-    displayRequestDuration: true,
-    filter: true,
-    tryItOutEnabled: true
+    url: '/api-docs.json'
   }
 };
 
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+app.use('/docs', swaggerUi.serve);
+app.get('/docs', swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 // Endpoint para obtener la especificación OpenAPI en JSON
 app.get('/api-docs.json', (req, res) => {
