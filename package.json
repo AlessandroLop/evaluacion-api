@@ -1,0 +1,31 @@
+{
+  "name": "evaluacion-catedraticos-api",
+  "version": "1.0.0",
+  "description": "API REST para evaluación anónima de catedráticos con Prisma y Supabase",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:seed": "node prisma/seed.js",
+    "db:reset": "prisma migrate reset",
+    "db:studio": "prisma studio"
+  },
+  "keywords": ["api", "rest", "evaluacion", "catedraticos", "prisma", "supabase"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "@scalar/express-api-reference": "^0.8.18",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "morgan": "^1.10.1",
+    "swagger-jsdoc": "^6.2.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prisma": "^6.15.0"
+  }
+}

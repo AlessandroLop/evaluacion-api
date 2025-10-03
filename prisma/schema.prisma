@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Modelo para almacenar información de los Catedráticos
+model Catedratico {
+  catedraticoId   Int      @id @default(autoincrement()) @map("CatedraticoID")
+  nombreCompleto  String   @db.VarChar(150) @map("NombreCompleto")
+  fechaRegistro   DateTime @default(now()) @map("FechaRegistro")
+  
+  // Relación con cursos
+  cursos          Curso[]
+  
+  @@map("Catedraticos")
+}
+
+// Modelo para almacenar los Cursos
+model Curso {
+  cursoId         Int      @id @default(autoincrement()) @map("CursoID")
+  nombreCurso     String   @db.VarChar(100) @map("NombreCurso")
+  catedraticoId   Int      @map("CatedraticoID")
+  seminario       String?  @db.VarChar(100) @map("Seminario")
+  
+  // Relaciones
+  catedratico     Catedratico @relation(fields: [catedraticoId], references: [catedraticoId])
+  evaluaciones    Evaluacion[]
+  
+  @@map("Cursos")
+}
+
+// Modelo para las 5 preguntas fijas del test
+model Pregunta {
+  preguntaId      Int      @id @default(autoincrement()) @map("PreguntaID")
+  textoPregunta   String   @db.Text @map("TextoPregunta")
+  
+  // Relación con respuestas
+  respuestas      Respuesta[]
+  
+  @@map("Preguntas")
+}
+
+// Modelo para registrar cada evaluación enviada
+model Evaluacion {
+  evaluacionId    Int      @id @default(autoincrement()) @map("EvaluacionID")
+  cursoId         Int      @map("CursoID")
+  comentarios     String   @db.Text @map("Comentarios")
+  fechaEvaluacion DateTime @default(now()) @map("FechaEvaluacion")
+  
+  // Relaciones
+  curso           Curso @relation(fields: [cursoId], references: [cursoId])
+  respuestas      Respuesta[]
+  
+  @@map("Evaluaciones")
+}
+
+// Modelo de detalle para las respuestas de cada evaluación
+model Respuesta {
+  respuestaId   Int @id @default(autoincrement()) @map("RespuestaID")
+  evaluacionId  Int @map("EvaluacionID")
+  preguntaId    Int @map("PreguntaID")
+  puntuacion    Int @map("Puntuacion") // Valor entre 1 y 5
+  
+  // Relaciones
+  evaluacion    Evaluacion @relation(fields: [evaluacionId], references: [evaluacionId], onDelete: Cascade)
+  pregunta      Pregunta @relation(fields: [preguntaId], references: [preguntaId])
+  
+  @@map("Respuestas")
+}
