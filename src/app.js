@@ -8,7 +8,7 @@ const swaggerUi = require('swagger-ui-express');
 // Importar middlewares y rutas
 const errorHandler = require('./middlewares/errorHandler');
 const evaluacionRoutes = require('./routes/evaluacionRoutes');
-const swaggerSpec = require('./config/swagger');
+const swaggerSpec = require('./config/swagger-static');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
