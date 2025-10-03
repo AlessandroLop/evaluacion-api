@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
 
 // Importar middlewares y rutas
 const errorHandler = require('./middlewares/errorHandler');
@@ -51,25 +52,25 @@ app.get('/', (req, res) => {
   });
 });
 
-// Documentación de la API (versión simple para Vercel)
-app.get('/docs', (req, res) => {
-  res.json({
-    message: '📚 Documentación de la API de Evaluación de Catedráticos',
-    version: '1.0.0',
-    endpoints: {
-      "GET /": "Información general de la API",
-      "GET /api-docs.json": "Especificación OpenAPI 3.0",
-      "GET /api/evaluaciones/health": "Estado de salud de la API",
-      "GET /api/evaluaciones/catedraticos": "Lista de catedráticos disponibles",
-      "GET /api/evaluaciones/catedraticos/:id/cursos": "Cursos de un catedrático específico",
-      "GET /api/evaluaciones/preguntas": "Preguntas del formulario de evaluación",
-      "POST /api/evaluaciones": "Crear nueva evaluación",
-      "GET /api/evaluaciones/estadisticas": "Estadísticas generales de evaluaciones"
-    },
-    swagger: "/api-docs.json",
-    note: "Para documentación interactiva completa, consulta el archivo README.md del repositorio"
-  });
-});
+// Documentación de la API con Swagger UI
+const swaggerUiOptions = {
+  customCss: `
+    .swagger-ui .topbar { display: none; }
+    .swagger-ui .info { margin: 20px 0; }
+    .swagger-ui .info .title { color: #7c3aed; font-size: 2rem; }
+    .swagger-ui .scheme-container { background: #f8fafc; padding: 20px; border-radius: 8px; }
+  `,
+  customSiteTitle: "API de Evaluación de Catedráticos - Documentación",
+  customCssUrl: null,
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    tryItOutEnabled: true
+  }
+};
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 // Endpoint para obtener la especificación OpenAPI en JSON
 app.get('/api-docs.json', (req, res) => {
