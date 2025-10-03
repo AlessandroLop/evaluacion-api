@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3001;
 // === MIDDLEWARES GLOBALES ===
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://tu-dominio.com'] // Cambiar por tu dominio en producción
+    ? true // Permitir todos los orígenes en producción (Vercel)
     : ['http://localhost:3000', 'http://localhost:3001'], // URLs permitidas en desarrollo
   credentials: true
 }));
