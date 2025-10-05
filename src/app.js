@@ -4,14 +4,58 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
 
 // Importar middlewares y rutas
 const errorHandler = require('./middlewares/errorHandler');
 const evaluacionRoutes = require('./routes/evaluacionRoutes');
-const swaggerSpec = require('./config/swagger-static');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// === CONFIGURACIÓN SWAGGER DINÁMICA ===
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'API de Evaluación de Catedráticos',
+      version: '1.0.0',
+      description: 'API REST para gestionar evaluaciones anónimas de catedráticos usando Prisma y Supabase',
+      contact: {
+        name: 'Soporte API',
+        email: 'soporte@evaluacion-api.com'
+      }
+    },
+    servers: [
+      {
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://evaluacion-3t37ji24x-jimmy-alessandro-lopez-lopezs-projects.vercel.app'
+          : `http://localhost:${PORT}`,
+        description: process.env.NODE_ENV === 'production' ? 'Servidor de producción (Vercel)' : 'Servidor de desarrollo'
+      }
+    ],
+    tags: [
+      {
+        name: '📋 Formulario',
+        description: 'Endpoints para el formulario de evaluación'
+      },
+      {
+        name: '📊 Estadísticas',
+        description: 'Endpoints para estadísticas y reportes'
+      },
+      {
+        name: '🔧 Sistema',
+        description: 'Endpoints del sistema'
+      }
+    ]
+  },
+  apis: [
+    './src/routes/evaluacionRoutes.js',
+    './src/routes/*.js'
+  ] // Archivos que contienen documentación Swagger
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // === MIDDLEWARES GLOBALES ===
 app.use(cors({
@@ -100,7 +144,7 @@ app.listen(PORT, () => {
   console.log('🚀 ========================================');
   console.log(`📍 Servidor ejecutándose en puerto: ${PORT}`);
   console.log(`🌐 URL base: http://localhost:${PORT}`);
-  console.log(`📚 Documentación Scalar: http://localhost:${PORT}/docs`);
+  console.log(`📚 Documentación Swagger: http://localhost:${PORT}/docs`);
   console.log(`📄 OpenAPI Spec: http://localhost:${PORT}/api-docs.json`);
   console.log(`🏥 Health Check: http://localhost:${PORT}/api/evaluaciones/health`);
   console.log(`🗄️  Base de datos: Supabase + Prisma`);

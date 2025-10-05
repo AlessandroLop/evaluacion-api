@@ -33,14 +33,7 @@ const swaggerSpec = {
         description: 'Endpoints del sistema'
       }
     ]
-  },
-  apis: [
-    process.env.NODE_ENV === 'production' 
-      ? './src/routes/*.js'
-      : './src/routes/*.js'
-  ], // Paths a archivos que contienen definiciones OpenAPI
-};
-
+  };
 const specs = swaggerJsdoc(options);
 
 module.exports = specs;

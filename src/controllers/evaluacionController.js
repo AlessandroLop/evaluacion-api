@@ -6,7 +6,7 @@ class EvaluacionController {
   // === CONTROLADORES PARA EL FORMULARIO ===
 
   /**
-   * Obtener todos los catedráticos disponibles
+   * Obtener todos los catedráticos con sus cursos
    */
   static async getCatedraticos(req, res, next) {
     try {
@@ -14,32 +14,7 @@ class EvaluacionController {
       res.status(200).json({
         success: true,
         data: catedraticos,
-        message: 'Catedráticos obtenidos exitosamente'
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Obtener cursos por catedrático
-   */
-  static async getCursosPorCatedratico(req, res, next) {
-    try {
-      const { catedraticoId } = req.params;
-      const cursos = await EvaluacionModel.getCursosPorCatedratico(catedraticoId);
-      
-      if (cursos.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'No se encontraron cursos para este catedrático'
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        data: cursos,
-        message: 'Cursos obtenidos exitosamente'
+        message: 'Catedráticos con cursos obtenidos exitosamente'
       });
     } catch (error) {
       next(error);

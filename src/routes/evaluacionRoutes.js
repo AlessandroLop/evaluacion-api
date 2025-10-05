@@ -8,20 +8,27 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  * @swagger
  * components:
  *   schemas:
- *     Catedratico:
+ *     CatedraticoConCursos:
  *       type: object
+ *       description: Catedrático con la lista de cursos que imparte
  *       properties:
  *         catedraticoId:
  *           type: integer
  *           description: ID único del catedrático
- *           example: 1
+ *           example: 5
  *         nombreCompleto:
  *           type: string
  *           description: Nombre completo del catedrático
- *           example: "MARIO ROBERTO MENDEZ ROMERO"
+ *           example: "DANY OTONIEL OLIVA BELTETON"
+ *         cursos:
+ *           type: array
+ *           description: Lista de cursos que imparte este catedrático
+ *           items:
+ *             $ref: '#/components/schemas/CursoBasico'
  *     
- *     Curso:
+ *     CursoBasico:
  *       type: object
+ *       description: Información básica de un curso
  *       properties:
  *         cursoId:
  *           type: integer
@@ -30,20 +37,32 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *         nombreCurso:
  *           type: string
  *           description: Nombre del curso
- *           example: "programacion Basica"
+ *           example: "Programación Básica"
  *         seminario:
  *           type: string
- *           description: Nombre del seminario
+ *           description: Seminario al que pertenece el curso
  *           example: "Seminario de Programación"
- *         catedratico:
- *           type: object
+ *     
+ *     CursoCompleto:
+ *       type: object
+ *       description: Información completa de un curso incluyendo datos del catedrático
+ *       allOf:
+ *         - $ref: '#/components/schemas/CursoBasico'
+ *         - type: object
  *           properties:
- *             nombreCompleto:
- *               type: string
- *               example: "MARIO ROBERTO MENDEZ ROMERO"
+ *             catedratico:
+ *               type: object
+ *               properties:
+ *                 catedraticoId:
+ *                   type: integer
+ *                   example: 5
+ *                 nombreCompleto:
+ *                   type: string
+ *                   example: "DANY OTONIEL OLIVA BELTETON"
  *     
  *     Pregunta:
  *       type: object
+ *       description: Pregunta de evaluación estándar
  *       properties:
  *         preguntaId:
  *           type: integer
@@ -51,11 +70,12 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *           example: 1
  *         textoPregunta:
  *           type: string
- *           description: Texto de la pregunta
+ *           description: Texto de la pregunta de evaluación
  *           example: "Dominio y manejo del tema del curso."
  *     
  *     EvaluacionRequest:
  *       type: object
+ *       description: Datos requeridos para crear una nueva evaluación
  *       required:
  *         - cursoId
  *         - comentarios
@@ -67,21 +87,23 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *           example: 1
  *         comentarios:
  *           type: string
- *           description: Comentarios libres del estudiante (mínimo 10 caracteres)
- *           example: "Excelente profesor, muy claro en sus explicaciones y siempre dispuesto a resolver dudas."
+ *           description: Comentarios del estudiante (mínimo 10 caracteres)
+ *           minLength: 10
+ *           example: "Excelente profesor, muy claro en sus explicaciones y siempre dispuesto a resolver dudas. Sus clases son dinámicas y fáciles de entender."
  *         respuestas:
  *           type: array
+ *           description: Puntuaciones del 1 al 5 para cada una de las 5 preguntas
  *           items:
  *             type: integer
  *             minimum: 1
  *             maximum: 5
  *           minItems: 5
  *           maxItems: 5
- *           description: Puntuaciones para las 5 preguntas (1-5)
  *           example: [5, 4, 5, 4, 5]
  *     
  *     EvaluacionResponse:
  *       type: object
+ *       description: Respuesta exitosa al crear una evaluación
  *       properties:
  *         success:
  *           type: boolean
@@ -91,6 +113,7 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *           properties:
  *             evaluacionId:
  *               type: integer
+ *               description: ID de la evaluación creada
  *               example: 123
  *             mensaje:
  *               type: string
@@ -101,30 +124,47 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *     
  *     EstadisticaCatedratico:
  *       type: object
+ *       description: Estadísticas detalladas de un catedrático
  *       properties:
  *         nombre_catedratico:
  *           type: string
- *           description: Nombre del catedrático
- *           example: "MARIO ROBERTO MENDEZ ROMERO"
+ *           description: Nombre completo del catedrático
+ *           example: "DANY OTONIEL OLIVA BELTETON"
  *         seminario:
  *           type: string
- *           description: Seminario donde imparte
+ *           description: Seminario donde imparte clases
  *           example: "Seminario de Programación"
  *         cantidad_respuestas:
  *           type: integer
  *           description: Número total de evaluaciones recibidas
- *           example: 15
+ *           example: 25
  *         calificacion_promedio_catedratico:
  *           type: number
  *           format: float
- *           description: Promedio de calificaciones del catedrático
- *           example: 4.27
+ *           description: Promedio de todas las calificaciones del catedrático
+ *           example: 4.52
  *     
- *     Estadisticas:
+ *     EstadisticasSeminario:
  *       type: object
+ *       description: Estadística de un seminario específico
+ *       properties:
+ *         seminario:
+ *           type: string
+ *           description: Nombre del seminario
+ *           example: "Seminario de Programación"
+ *         promedio_general:
+ *           type: number
+ *           format: float
+ *           description: Promedio general del seminario
+ *           example: 4.42
+ *     
+ *     EstadisticasCompletas:
+ *       type: object
+ *       description: Estadísticas completas del sistema
  *       properties:
  *         catedraticos:
  *           type: array
+ *           description: Estadísticas detalladas por catedrático
  *           items:
  *             $ref: '#/components/schemas/EstadisticaCatedratico'
  *         calificacion_general_seminario:
@@ -134,29 +174,55 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *           example: 4.35
  *         promedios_por_seminario:
  *           type: array
+ *           description: Promedios agrupados por seminario
  *           items:
- *             type: object
- *             properties:
- *               seminario:
- *                 type: string
- *                 example: "Seminario de Programación"
- *               promedio_general:
- *                 type: number
- *                 format: float
- *                 example: 4.20
+ *             $ref: '#/components/schemas/EstadisticasSeminario'
  *     
- *     ApiResponse:
+ *     HealthResponse:
  *       type: object
+ *       description: Respuesta del health check
  *       properties:
  *         success:
  *           type: boolean
+ *           example: true
  *         message:
  *           type: string
+ *           example: "API funcionando correctamente"
  *         data:
  *           type: object
+ *           properties:
+ *             status:
+ *               type: string
+ *               example: "healthy"
+ *             timestamp:
+ *               type: string
+ *               format: date-time
+ *               example: "2025-10-04T14:30:00.000Z"
+ *             database:
+ *               type: string
+ *               example: "connected"
+ *             catedraticos:
+ *               type: integer
+ *               description: Número total de catedráticos en la base de datos
+ *               example: 5
+ *     
+ *     ApiResponse:
+ *       type: object
+ *       description: Respuesta estándar de la API
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           description: Indica si la operación fue exitosa
+ *         message:
+ *           type: string
+ *           description: Mensaje descriptivo de la operación
+ *         data:
+ *           type: object
+ *           description: Datos de respuesta (varía según el endpoint)
  *     
  *     Error:
  *       type: object
+ *       description: Respuesta de error estándar
  *       properties:
  *         success:
  *           type: boolean
@@ -164,25 +230,33 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *         error:
  *           type: string
  *           description: Tipo de error
- *           example: "Error de validación"
+ *           example: "ValidationError"
  *         message:
  *           type: string
  *           description: Mensaje descriptivo del error
- *           example: "El campo de comentarios es obligatorio"
+ *           example: "Los datos enviados no son válidos"
  */
 
-// === RUTAS PARA EL FORMULARIO ===
+// ===== RUTAS DEL FORMULARIO DE EVALUACIÓN =====
 
 /**
  * @swagger
  * /api/evaluaciones/catedraticos:
  *   get:
- *     summary: Obtener lista de catedráticos
- *     description: Retorna todos los catedráticos disponibles para evaluación
- *     tags: [Formulario]
+ *     summary: Obtener catedráticos con sus cursos
+ *     description: |
+ *       Retorna todos los catedráticos disponibles para evaluación junto con 
+ *       los cursos que imparten. Este endpoint optimizado consolida la información 
+ *       en una sola petición para mejorar el rendimiento del frontend.
+ *       
+ *       **Características:**
+ *       - Información completa de catedráticos y cursos
+ *       - Optimizado para reducir peticiones HTTP
+ *       - Datos listos para usar en formularios de evaluación
+ *     tags: [📋 Formulario]
  *     responses:
  *       200:
- *         description: Lista de catedráticos obtenida exitosamente
+ *         description: Lista de catedráticos con sus cursos obtenida exitosamente
  *         content:
  *           application/json:
  *             schema:
@@ -193,7 +267,26 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *                     data:
  *                       type: array
  *                       items:
- *                         $ref: '#/components/schemas/Catedratico'
+ *                         $ref: '#/components/schemas/CatedraticoConCursos'
+ *             example:
+ *               success: true
+ *               message: "Catedráticos con cursos obtenidos exitosamente"
+ *               data:
+ *                 - catedraticoId: 5
+ *                   nombreCompleto: "DANY OTONIEL OLIVA BELTETON"
+ *                   cursos:
+ *                     - cursoId: 1
+ *                       nombreCurso: "Programación Básica"
+ *                       seminario: "Seminario de Programación"
+ *                     - cursoId: 2
+ *                       nombreCurso: "Estructuras de Datos"
+ *                       seminario: "Seminario de Programación"
+ *                 - catedraticoId: 3
+ *                   nombreCompleto: "CARLOS AMILCAR TEZO PALENCIA"
+ *                   cursos:
+ *                     - cursoId: 3
+ *                       nombreCurso: "Base de Datos I"
+ *                       seminario: "Seminario de Desarrollo"
  *       500:
  *         description: Error interno del servidor
  *         content:
@@ -203,66 +296,26 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  */
 router.get('/catedraticos', EvaluacionController.getCatedraticos);
 
-/**
- * @swagger
- * /api/evaluaciones/catedraticos/{catedraticoId}/cursos:
- *   get:
- *     summary: Obtener cursos por catedrático
- *     description: Retorna todos los cursos impartidos por un catedrático específico
- *     tags: [Formulario]
- *     parameters:
- *       - in: path
- *         name: catedraticoId
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID del catedrático
- *         example: 1
- *     responses:
- *       200:
- *         description: Cursos obtenidos exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Curso'
- *       400:
- *         description: ID de catedrático inválido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: No se encontraron cursos para este catedrático
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get('/catedraticos/:catedraticoId/cursos', validateId, EvaluacionController.getCursosPorCatedratico);
+// NOTA: El endpoint /catedraticos/:id/cursos fue REMOVIDO y consolidado en el endpoint anterior
+// para optimizar el rendimiento y reducir la cantidad de peticiones HTTP necesarias.
 
 /**
  * @swagger
  * /api/evaluaciones/preguntas:
  *   get:
  *     summary: Obtener preguntas de evaluación
- *     description: Retorna las 5 preguntas fijas del formulario de evaluación
- *     tags: [Formulario]
+ *     description: |
+ *       Retorna las 5 preguntas fijas que se utilizan en el formulario de evaluación.
+ *       Estas preguntas son estándar para todos los catedráticos y cursos.
+ *       
+ *       **Características:**
+ *       - 5 preguntas estándar de evaluación
+ *       - Mismas preguntas para todos los catedráticos
+ *       - Cada pregunta tiene un ID único y texto descriptivo
+ *     tags: [📋 Formulario]
  *     responses:
  *       200:
- *         description: Preguntas obtenidas exitosamente
+ *         description: Preguntas de evaluación obtenidas exitosamente
  *         content:
  *           application/json:
  *             schema:
@@ -274,6 +327,20 @@ router.get('/catedraticos/:catedraticoId/cursos', validateId, EvaluacionControll
  *                       type: array
  *                       items:
  *                         $ref: '#/components/schemas/Pregunta'
+ *             example:
+ *               success: true
+ *               message: "Preguntas obtenidas exitosamente"
+ *               data:
+ *                 - preguntaId: 1
+ *                   textoPregunta: "Dominio y manejo del tema del curso."
+ *                 - preguntaId: 2
+ *                   textoPregunta: "Capacidad para resolver dudas y brindar explicaciones claras."
+ *                 - preguntaId: 3
+ *                   textoPregunta: "Puntualidad y cumplimiento de horarios establecidos."
+ *                 - preguntaId: 4
+ *                   textoPregunta: "Uso de metodologías de enseñanza efectivas."
+ *                 - preguntaId: 5
+ *                   textoPregunta: "Fomento de la participación y el aprendizaje colaborativo."
  *       500:
  *         description: Error interno del servidor
  *         content:
@@ -287,18 +354,37 @@ router.get('/preguntas', EvaluacionController.getPreguntas);
  * @swagger
  * /api/evaluaciones:
  *   post:
- *     summary: Registrar nueva evaluación
- *     description: Registra una evaluación anónima para un curso específico con validaciones completas
- *     tags: [Formulario]
+ *     summary: Crear nueva evaluación
+ *     description: |
+ *       Registra una evaluación anónima para un curso específico. La evaluación 
+ *       incluye puntuaciones del 1 al 5 para las 5 preguntas estándar y comentarios 
+ *       libres del estudiante.
+ *       
+ *       **Validaciones:**
+ *       - El curso debe existir en la base de datos
+ *       - Se requieren exactamente 5 respuestas (una por pregunta)
+ *       - Cada respuesta debe estar entre 1 y 5
+ *       - Los comentarios deben tener al menos 10 caracteres
+ *       
+ *       **Proceso:**
+ *       1. Validación de datos de entrada
+ *       2. Verificación de existencia del curso
+ *       3. Registro anónimo de la evaluación
+ *       4. Cálculo automático de estadísticas
+ *     tags: [📋 Formulario]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/EvaluacionRequest'
+ *           example:
+ *             cursoId: 1
+ *             comentarios: "Excelente profesor, muy claro en sus explicaciones y siempre dispuesto a resolver dudas. Sus clases son dinámicas y fáciles de entender."
+ *             respuestas: [5, 4, 5, 4, 5]
  *     responses:
  *       201:
- *         description: Evaluación registrada exitosamente
+ *         description: Evaluación creada exitosamente
  *         content:
  *           application/json:
  *             schema:
@@ -309,12 +395,29 @@ router.get('/preguntas', EvaluacionController.getPreguntas);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             examples:
+ *               validacion_respuestas:
+ *                 summary: Error en respuestas
+ *                 value:
+ *                   success: false
+ *                   error: "ValidationError"
+ *                   message: "Se requieren exactamente 5 respuestas con valores entre 1 y 5"
+ *               validacion_comentarios:
+ *                 summary: Error en comentarios
+ *                 value:
+ *                   success: false
+ *                   error: "ValidationError"
+ *                   message: "Los comentarios deben tener al menos 10 caracteres"
  *       404:
  *         description: El curso especificado no existe
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               error: "NotFoundError"
+ *               message: "El curso especificado no existe"
  *       500:
  *         description: Error interno del servidor
  *         content:
@@ -324,15 +427,25 @@ router.get('/preguntas', EvaluacionController.getPreguntas);
  */
 router.post('/', validateEvaluacion, EvaluacionController.crearEvaluacion);
 
-// === RUTAS PARA ESTADÍSTICAS ===
+// ===== RUTAS DE ESTADÍSTICAS Y REPORTES =====
 
 /**
  * @swagger
  * /api/evaluaciones/estadisticas:
  *   get:
  *     summary: Obtener estadísticas completas
- *     description: Retorna estadísticas agregadas de todas las evaluaciones por catedrático y seminario
- *     tags: [Estadísticas]
+ *     description: |
+ *       Retorna estadísticas agregadas de todas las evaluaciones, incluyendo:
+ *       - Estadísticas detalladas por catedrático
+ *       - Promedio general de todos los seminarios
+ *       - Promedios agrupados por seminario
+ *       
+ *       **Información incluida:**
+ *       - Nombre del catedrático y seminario
+ *       - Cantidad total de evaluaciones recibidas
+ *       - Promedio de calificaciones por catedrático
+ *       - Análisis comparativo entre seminarios
+ *     tags: [📊 Estadísticas]
  *     responses:
  *       200:
  *         description: Estadísticas obtenidas exitosamente
@@ -344,7 +457,26 @@ router.post('/', validateEvaluacion, EvaluacionController.crearEvaluacion);
  *                 - type: object
  *                   properties:
  *                     data:
- *                       $ref: '#/components/schemas/Estadisticas'
+ *                       $ref: '#/components/schemas/EstadisticasCompletas'
+ *             example:
+ *               success: true
+ *               message: "Estadísticas obtenidas exitosamente"
+ *               data:
+ *                 catedraticos:
+ *                   - nombre_catedratico: "DANY OTONIEL OLIVA BELTETON"
+ *                     seminario: "Seminario de Programación"
+ *                     cantidad_respuestas: 25
+ *                     calificacion_promedio_catedratico: 4.52
+ *                   - nombre_catedratico: "CARLOS AMILCAR TEZO PALENCIA"
+ *                     seminario: "Seminario de Desarrollo"
+ *                     cantidad_respuestas: 18
+ *                     calificacion_promedio_catedratico: 4.31
+ *                 calificacion_general_seminario: 4.35
+ *                 promedios_por_seminario:
+ *                   - seminario: "Seminario de Programación"
+ *                     promedio_general: 4.42
+ *                   - seminario: "Seminario de Desarrollo"
+ *                     promedio_general: 4.28
  *       500:
  *         description: Error interno del servidor
  *         content:
@@ -359,8 +491,15 @@ router.get('/estadisticas', EvaluacionController.getEstadisticas);
  * /api/evaluaciones/estadisticas/seminarios:
  *   get:
  *     summary: Obtener estadísticas por seminario
- *     description: Retorna promedios de calificaciones agrupados por seminario
- *     tags: [Estadísticas]
+ *     description: |
+ *       Retorna promedios de calificaciones agrupados únicamente por seminario.
+ *       Útil para comparar el rendimiento entre diferentes seminarios.
+ *       
+ *       **Datos incluidos:**
+ *       - Nombre del seminario
+ *       - Promedio general del seminario
+ *       - Comparación entre seminarios
+ *     tags: [📊 Estadísticas]
  *     responses:
  *       200:
  *         description: Estadísticas por seminario obtenidas exitosamente
@@ -374,13 +513,17 @@ router.get('/estadisticas', EvaluacionController.getEstadisticas);
  *                     data:
  *                       type: array
  *                       items:
- *                         type: object
- *                         properties:
- *                           seminario:
- *                             type: string
- *                           promedio_general:
- *                             type: number
- *                             format: float
+ *                         $ref: '#/components/schemas/EstadisticasSeminario'
+ *             example:
+ *               success: true
+ *               message: "Estadísticas por seminario obtenidas exitosamente"
+ *               data:
+ *                 - seminario: "Seminario de Programación"
+ *                   promedio_general: 4.42
+ *                 - seminario: "Seminario de Desarrollo"
+ *                   promedio_general: 4.28
+ *                 - seminario: "Seminario de Redes"
+ *                   promedio_general: 4.15
  *       500:
  *         description: Error interno del servidor
  *         content:
@@ -390,46 +533,45 @@ router.get('/estadisticas', EvaluacionController.getEstadisticas);
  */
 router.get('/estadisticas/seminarios', EvaluacionController.getEstadisticasPorSeminario);
 
-// === RUTAS DEL SISTEMA ===
+// ===== RUTAS DEL SISTEMA =====
 
 /**
  * @swagger
  * /api/evaluaciones/health:
  *   get:
  *     summary: Verificar estado de la API
- *     description: Endpoint para verificar que la API y la base de datos están funcionando correctamente
- *     tags: [Sistema]
+ *     description: |
+ *       Endpoint para verificar que la API y la base de datos están funcionando 
+ *       correctamente. Útil para monitoreo y diagnóstico del sistema.
+ *       
+ *       **Información que proporciona:**
+ *       - Estado general de la API
+ *       - Conectividad con la base de datos
+ *       - Timestamp de la verificación
+ *       - Conteo de catedráticos en la base de datos
+ *       
+ *       **Uso recomendado:**
+ *       - Monitoreo de salud del sistema
+ *       - Verificación de conectividad con la base de datos
+ *       - Diagnóstico de problemas de conectividad
+ *     tags: [🔧 Sistema]
  *     responses:
  *       200:
  *         description: API funcionando correctamente
  *         content:
  *           application/json:
  *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         status:
- *                           type: string
- *                           example: "healthy"
- *                         timestamp:
- *                           type: string
- *                           format: date-time
- *                         database:
- *                           type: string
- *                           example: "connected"
- *                         catedraticos:
- *                           type: integer
- *                           example: 4
+ *               $ref: '#/components/schemas/HealthResponse'
  *       503:
  *         description: API con problemas de conectividad
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               error: "ServiceUnavailable"
+ *               message: "No se puede conectar con la base de datos"
  */
 router.get('/health', EvaluacionController.healthCheck);
 

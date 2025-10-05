@@ -6,40 +6,26 @@ class EvaluacionModel {
   // === MÉTODOS PARA EL FORMULARIO ===
   
   /**
-   * Obtener todos los catedráticos disponibles
+   * Obtener todos los catedráticos con sus cursos
    */
   static async getCatedraticos() {
     return await prisma.catedratico.findMany({
       select: {
         catedraticoId: true,
-        nombreCompleto: true
-      },
-      orderBy: {
-        nombreCompleto: 'asc'
-      }
-    });
-  }
-
-  /**
-   * Obtener cursos por catedrático
-   */
-  static async getCursosPorCatedratico(catedraticoId) {
-    return await prisma.curso.findMany({
-      where: {
-        catedraticoId: parseInt(catedraticoId)
-      },
-      select: {
-        cursoId: true,
-        nombreCurso: true,
-        seminario: true,
-        catedratico: {
+        nombreCompleto: true,
+        cursos: {
           select: {
-            nombreCompleto: true
+            cursoId: true,
+            nombreCurso: true,
+            seminario: true
+          },
+          orderBy: {
+            nombreCurso: 'asc'
           }
         }
       },
       orderBy: {
-        nombreCurso: 'asc'
+        nombreCompleto: 'asc'
       }
     });
   }
