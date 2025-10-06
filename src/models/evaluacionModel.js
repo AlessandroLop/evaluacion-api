@@ -80,6 +80,62 @@ class EvaluacionModel {
     }
   }
 
+  /**
+   * Verificar si un curso existe
+   */
+  static async verificarCursoExiste(cursoId) {
+    try {
+      const curso = await prisma.curso.findUnique({
+        where: {
+          cursoId: parseInt(cursoId)
+        }
+      });
+      return !!curso;
+    } catch (error) {
+      console.error('Error al verificar curso:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Obtener comentarios de evaluaciones por curso
+   */
+  static async getComentariosPorCurso(cursoId) {
+    try {
+      const comentarios = await prisma.evaluacion.findMany({
+        where: {
+          cursoId: parseInt(cursoId)
+        },
+        select: {
+          evaluacionId: true,
+          comentarios: true,
+          fechaEvaluacion: true,
+          curso: {
+            select: {
+              cursoId: true,
+              nombreCurso: true,
+              seminario: true,
+              catedratico: {
+                select: {
+                  catedraticoId: true,
+                  nombreCompleto: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          fechaEvaluacion: 'desc' // Comentarios más recientes primero
+        }
+      });
+
+      return comentarios;
+    } catch (error) {
+      console.error('Error al obtener comentarios por curso:', error);
+      throw new Error('Error al obtener los comentarios del curso');
+    }
+  }
+
   // === MÉTODOS PARA ESTADÍSTICAS ===
 
   /**

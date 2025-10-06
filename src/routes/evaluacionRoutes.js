@@ -206,6 +206,79 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *               description: Número total de catedráticos en la base de datos
  *               example: 5
  *     
+ *     ComentarioEvaluacion:
+ *       type: object
+ *       description: Comentario de evaluación con información del curso y catedrático
+ *       properties:
+ *         evaluacionId:
+ *           type: integer
+ *           description: ID único de la evaluación
+ *           example: 15
+ *         comentarios:
+ *           type: string
+ *           description: Comentarios escritos por el estudiante
+ *           example: "Excelente profesor, muy claro en sus explicaciones y siempre dispuesto a ayudar."
+ *         fechaEvaluacion:
+ *           type: string
+ *           format: date-time
+ *           description: Fecha y hora cuando se realizó la evaluación
+ *           example: "2024-12-10T14:30:00.000Z"
+ *         curso:
+ *           type: object
+ *           description: Información del curso evaluado
+ *           properties:
+ *             cursoId:
+ *               type: integer
+ *               example: 1
+ *             nombreCurso:
+ *               type: string
+ *               example: "Desarrollo Web Frontend"
+ *             codigoCurso:
+ *               type: string
+ *               example: "WEB101"
+ *         catedratico:
+ *           type: object
+ *           description: Información del catedrático evaluado
+ *           properties:
+ *             catedraticoId:
+ *               type: integer
+ *               example: 3
+ *             nombreCompleto:
+ *               type: string
+ *               example: "Dr. Carlos Mendoza"
+ *     
+ *     ComentariosMetadata:
+ *       type: object
+ *       description: Metadatos sobre los comentarios obtenidos
+ *       properties:
+ *         totalComentarios:
+ *           type: integer
+ *           description: Número total de comentarios encontrados
+ *           example: 2
+ *         cursoInfo:
+ *           type: object
+ *           description: Información del curso consultado
+ *           properties:
+ *             cursoId:
+ *               type: integer
+ *               example: 1
+ *             nombreCurso:
+ *               type: string
+ *               example: "Desarrollo Web Frontend"
+ *             codigoCurso:
+ *               type: string
+ *               example: "WEB101"
+ *         catedraticoInfo:
+ *           type: object
+ *           description: Información del catedrático del curso
+ *           properties:
+ *             catedraticoId:
+ *               type: integer
+ *               example: 3
+ *             nombreCompleto:
+ *               type: string
+ *               example: "Dr. Carlos Mendoza"
+ *     
  *     ApiResponse:
  *       type: object
  *       description: Respuesta estándar de la API
@@ -296,8 +369,7 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  */
 router.get('/catedraticos', EvaluacionController.getCatedraticos);
 
-// NOTA: El endpoint /catedraticos/:id/cursos fue REMOVIDO y consolidado en el endpoint anterior
-// para optimizar el rendimiento y reducir la cantidad de peticiones HTTP necesarias.
+
 
 /**
  * @swagger
@@ -532,6 +604,116 @@ router.get('/estadisticas', EvaluacionController.getEstadisticas);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/estadisticas/seminarios', EvaluacionController.getEstadisticasPorSeminario);
+
+// ===== RUTAS DE COMENTARIOS =====
+
+/**
+ * @swagger
+ * /api/evaluaciones/cursos/{cursoId}/comentarios:
+ *   get:
+ *     summary: Obtener comentarios de evaluaciones por curso
+ *     description: |
+ *       Retorna todos los comentarios de las evaluaciones realizadas para un curso específico.
+ *       Incluye información completa del curso, catedrático y metadatos de las evaluaciones.
+ *       
+ *       **Características:**
+ *       - Filtrado por curso específico (cursoId)
+ *       - Incluye información del catedrático asociado
+ *       - Comentarios ordenados por fecha de evaluación (más recientes primero)
+ *       - Validación de existencia del curso
+ *       - Metadatos sobre el total de comentarios
+ *       
+ *       **Casos de uso:**
+ *       - Análisis de feedback por curso
+ *       - Revisión de comentarios para mejora continua
+ *       - Reportes de satisfacción estudiantil por materia
+ *     tags: [📊 Comentarios]
+ *     parameters:
+ *       - in: path
+ *         name: cursoId
+ *         required: true
+ *         description: ID único del curso para obtener comentarios
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Comentarios obtenidos exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ComentarioEvaluacion'
+ *                     metadata:
+ *                       $ref: '#/components/schemas/ComentariosMetadata'
+ *             example:
+ *               success: true
+ *               message: "Comentarios obtenidos exitosamente para el curso: Desarrollo Web Frontend"
+ *               data:
+ *                 - evaluacionId: 15
+ *                   comentarios: "Excelente profesor, muy claro en sus explicaciones y siempre dispuesto a ayudar."
+ *                   fechaEvaluacion: "2024-12-10T14:30:00.000Z"
+ *                   curso:
+ *                     cursoId: 1
+ *                     nombreCurso: "Desarrollo Web Frontend"
+ *                     codigoCurso: "WEB101"
+ *                   catedratico:
+ *                     catedraticoId: 3
+ *                     nombreCompleto: "Dr. Carlos Mendoza"
+ *                 - evaluacionId: 12
+ *                   comentarios: "El contenido del curso es muy actualizado y las prácticas son útiles."
+ *                   fechaEvaluacion: "2024-12-08T16:45:00.000Z"
+ *                   curso:
+ *                     cursoId: 1
+ *                     nombreCurso: "Desarrollo Web Frontend"
+ *                     codigoCurso: "WEB101"
+ *                   catedratico:
+ *                     catedraticoId: 3
+ *                     nombreCompleto: "Dr. Carlos Mendoza"
+ *               metadata:
+ *                 totalComentarios: 2
+ *                 cursoInfo:
+ *                   cursoId: 1
+ *                   nombreCurso: "Desarrollo Web Frontend"
+ *                   codigoCurso: "WEB101"
+ *                 catedraticoInfo:
+ *                   catedraticoId: 3
+ *                   nombreCompleto: "Dr. Carlos Mendoza"
+ *       400:
+ *         description: Parámetros inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               error: "BadRequest"
+ *               message: "El cursoId debe ser un número entero válido"
+ *       404:
+ *         description: Curso no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               error: "NotFound"
+ *               message: "No se encontró el curso con ID: 999"
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/cursos/:cursoId/comentarios', EvaluacionController.getComentariosPorCurso);
 
 // ===== RUTAS DEL SISTEMA =====
 

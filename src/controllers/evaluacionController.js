@@ -73,6 +73,76 @@ class EvaluacionController {
     }
   }
 
+  /**
+   * Obtener comentarios de evaluaciones por curso
+   */
+  static async getComentariosPorCurso(req, res, next) {
+    try {
+      const { cursoId } = req.params;
+      
+      // Validar que el cursoId sea un número válido
+      if (!cursoId || isNaN(parseInt(cursoId))) {
+        return res.status(400).json({
+          success: false,
+          error: 'ValidationError',
+          message: 'El ID del curso debe ser un número válido'
+        });
+      }
+
+      const comentarios = await EvaluacionModel.getComentariosPorCurso(cursoId);
+      
+      // Verificar si el curso existe pero no tiene evaluaciones
+      if (comentarios.length === 0) {
+        // Verificar si el curso existe
+        const cursoExiste = await EvaluacionModel.verificarCursoExiste(cursoId);
+        if (!cursoExiste) {
+          return res.status(404).json({
+            success: false,
+            error: 'NotFoundError',
+            message: 'El curso especificado no existe'
+          });
+        }
+        
+        return res.status(200).json({
+          success: true,
+          data: [],
+          message: 'No se encontraron comentarios para este curso',
+          meta: {
+            totalComentarios: 0,
+            curso: null
+          }
+        });
+      }
+
+      // Obtener información del curso desde el primer comentario
+      const cursoInfo = comentarios[0].curso;
+      
+      res.status(200).json({
+        success: true,
+        data: comentarios.map(evaluacion => ({
+          evaluacionId: evaluacion.evaluacionId,
+          comentarios: evaluacion.comentarios,
+          fechaEvaluacion: evaluacion.fechaEvaluacion
+        })),
+        message: 'Comentarios obtenidos exitosamente',
+        meta: {
+          totalComentarios: comentarios.length,
+          curso: {
+            cursoId: cursoInfo.cursoId,
+            nombreCurso: cursoInfo.nombreCurso,
+            seminario: cursoInfo.seminario,
+            catedratico: {
+              catedraticoId: cursoInfo.catedratico.catedraticoId,
+              nombreCompleto: cursoInfo.catedratico.nombreCompleto
+            }
+          }
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // === CONTROLADORES PARA ESTADÍSTICAS ===
 
   /**
