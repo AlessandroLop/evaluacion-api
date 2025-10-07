@@ -57,70 +57,13 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// === CONFIGURACIÓN DE DOMINIOS PERMITIDOS ===
-const getAllowedOrigins = () => {
-  // Dominios base desde variables de entorno
-  const allowedDomains = process.env.ALLOWED_DOMAINS 
-    ? process.env.ALLOWED_DOMAINS.split(',').map(domain => domain.trim())
-    : [];
-
-  // Configuración por entorno
-  if (process.env.NODE_ENV === 'production') {
-    return [
-      // Dominios de producción
-      'https://evaluacion-3t37ji24x-jimmy-alessandro-lopez-lopezs-projects.vercel.app',
-      'https://evaluacion-api.vercel.app', // Dominio personalizado si lo tienes
-      // Agregar dominios de tus aplicaciones frontend
-      'https://tu-frontend-app.vercel.app',
-      'https://evaluacion-frontend.com', // Dominio personalizado
-      ...allowedDomains // Dominios adicionales desde .env
-    ];
-  } else {
-    return [
-      // Desarrollo local - Puertos comunes
-      'http://localhost:3000', // React/Next.js dev server
-      'http://localhost:3001', // API dev server  
-      'http://localhost:4200', // Angular dev server
-      'http://localhost:8080', // Vue.js dev server
-      'http://127.0.0.1:3000', // Alternativa localhost
-      'http://127.0.0.1:3001',
-      // Angular con puertos dinámicos (común en Angular 17+)
-      'http://localhost:51421', // Puerto específico de tu Angular
-      /^http:\/\/localhost:\d+$/, // Cualquier puerto localhost (desarrollo)
-      /^http:\/\/127\.0\.0\.1:\d+$/, // Cualquier puerto 127.0.0.1 (desarrollo)
-      ...allowedDomains // Dominios adicionales desde .env
-    ];
-  }
-};
-
 // === MIDDLEWARES GLOBALES ===
+// Configuración CORS abierta - Permite cualquier origen
 app.use(cors({
-  origin: (origin, callback) => {
-    const allowedOrigins = getAllowedOrigins();
-    
-    // Permitir requests sin origin (como Postman, aplicaciones móviles, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Verificar si el origin está en la lista permitida
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
-      if (typeof allowedOrigin === 'string') {
-        return allowedOrigin === origin;
-      } else if (allowedOrigin instanceof RegExp) {
-        return allowedOrigin.test(origin);
-      }
-      return false;
-    });
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.log(`❌ CORS blocked origin: ${origin}`);
-      callback(new Error('No permitido por política CORS'));
-    }
-  },
+  origin: true, // Permite cualquier origen
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   optionsSuccessStatus: 200 // Para navegadores legacy
 }));
 
