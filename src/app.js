@@ -77,13 +77,17 @@ const getAllowedOrigins = () => {
     ];
   } else {
     return [
-      // Desarrollo local
+      // Desarrollo local - Puertos comunes
       'http://localhost:3000', // React/Next.js dev server
       'http://localhost:3001', // API dev server  
       'http://localhost:4200', // Angular dev server
       'http://localhost:8080', // Vue.js dev server
       'http://127.0.0.1:3000', // Alternativa localhost
       'http://127.0.0.1:3001',
+      // Angular con puertos dinámicos (común en Angular 17+)
+      'http://localhost:51421', // Puerto específico de tu Angular
+      /^http:\/\/localhost:\d+$/, // Cualquier puerto localhost (desarrollo)
+      /^http:\/\/127\.0\.0\.1:\d+$/, // Cualquier puerto 127.0.0.1 (desarrollo)
       ...allowedDomains // Dominios adicionales desde .env
     ];
   }
@@ -91,10 +95,33 @@ const getAllowedOrigins = () => {
 
 // === MIDDLEWARES GLOBALES ===
 app.use(cors({
-  origin: getAllowedOrigins(),
+  origin: (origin, callback) => {
+    const allowedOrigins = getAllowedOrigins();
+    
+    // Permitir requests sin origin (como Postman, aplicaciones móviles, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Verificar si el origin está en la lista permitida
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return allowedOrigin === origin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log(`❌ CORS blocked origin: ${origin}`);
+      callback(new Error('No permitido por política CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // Para navegadores legacy
 }));
 
 app.use(express.json({ limit: '10mb' }));
