@@ -28,10 +28,10 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: process.env.NODE_ENV === 'production' 
+        url: process.env.API_BASE_URL || (process.env.NODE_ENV === 'production' 
           ? 'https://evaluacion-3t37ji24x-jimmy-alessandro-lopez-lopezs-projects.vercel.app'
-          : `http://localhost:${PORT}`,
-        description: process.env.NODE_ENV === 'production' ? 'Servidor de producción (Vercel)' : 'Servidor de desarrollo'
+          : `http://localhost:${PORT}`),
+        description: process.env.NODE_ENV === 'production' ? 'Servidor de producción' : 'Servidor de desarrollo'
       }
     ],
     tags: [
@@ -57,12 +57,44 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
+// === CONFIGURACIÓN DE DOMINIOS PERMITIDOS ===
+const getAllowedOrigins = () => {
+  // Dominios base desde variables de entorno
+  const allowedDomains = process.env.ALLOWED_DOMAINS 
+    ? process.env.ALLOWED_DOMAINS.split(',').map(domain => domain.trim())
+    : [];
+
+  // Configuración por entorno
+  if (process.env.NODE_ENV === 'production') {
+    return [
+      // Dominios de producción
+      'https://evaluacion-3t37ji24x-jimmy-alessandro-lopez-lopezs-projects.vercel.app',
+      'https://evaluacion-api.vercel.app', // Dominio personalizado si lo tienes
+      // Agregar dominios de tus aplicaciones frontend
+      'https://tu-frontend-app.vercel.app',
+      'https://evaluacion-frontend.com', // Dominio personalizado
+      ...allowedDomains // Dominios adicionales desde .env
+    ];
+  } else {
+    return [
+      // Desarrollo local
+      'http://localhost:3000', // React/Next.js dev server
+      'http://localhost:3001', // API dev server  
+      'http://localhost:4200', // Angular dev server
+      'http://localhost:8080', // Vue.js dev server
+      'http://127.0.0.1:3000', // Alternativa localhost
+      'http://127.0.0.1:3001',
+      ...allowedDomains // Dominios adicionales desde .env
+    ];
+  }
+};
+
 // === MIDDLEWARES GLOBALES ===
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? true // Permitir todos los orígenes en producción (Vercel)
-    : ['http://localhost:3000', 'http://localhost:3001'], // URLs permitidas en desarrollo
-  credentials: true
+  origin: getAllowedOrigins(),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 app.use(express.json({ limit: '10mb' }));

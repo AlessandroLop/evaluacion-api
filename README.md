@@ -65,14 +65,48 @@ npm run db:generate
 
 ### 2. Configurar variables de entorno
 
-El archivo `.env` ya está configurado con tu base de datos Supabase:
+Copia el archivo `.env.example` y renómbralo a `.env`:
+
+```bash
+cp .env.example .env
+```
+
+#### 🔧 **Configuración básica (.env):**
 
 ```env
-DATABASE_URL="postgresql://postgres.cgpddxjqmybjtgqzfgmz:Umg1234$$$@aws-1-us-east-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.cgpddxjqmybjtgqzfgmz:Umg1234$$$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+# Configuración del servidor
 PORT=3001
 NODE_ENV=development
+API_BASE_URL=http://localhost:3001
+
+# Base de datos Supabase
+DATABASE_URL="postgresql://postgres.cgpddxjqmybjtgqzfgmz:Umg1234$$$@aws-1-us-east-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.cgpddxjqmybjtgqzfgmz:Umg1234$$$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
 ```
+
+#### 🌍 **Configuración de dominios permitidos (CORS):**
+
+Para mayor seguridad, puedes especificar exactamente qué dominios pueden hacer peticiones a tu API:
+
+```env
+# Dominios permitidos (separados por comas)
+ALLOWED_DOMAINS=https://mi-frontend.vercel.app,https://evaluacion-dashboard.com,https://admin.midominio.com
+```
+
+#### 🚀 **Configuración para producción:**
+
+```env
+NODE_ENV=production
+API_BASE_URL=https://tu-api.vercel.app
+ALLOWED_DOMAINS=https://tu-frontend.vercel.app,https://tu-dashboard.com,https://www.tudominio.com
+```
+
+#### 📋 **Ejemplos de dominios comunes:**
+
+- **Frontend React/Next.js**: `https://tu-app.vercel.app`
+- **Dashboard Admin**: `https://admin.tudominio.com`
+- **Aplicación móvil web**: `https://mobile.tudominio.com`
+- **Landing page**: `https://www.tudominio.com`
 
 ### 3. Sincronizar base de datos y ejecutar seed
 
