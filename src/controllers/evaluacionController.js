@@ -212,6 +212,155 @@ class EvaluacionController {
       });
     }
   }
+
+  // === CONTROLADORES PARA ANÁLISIS DE SENTIMIENTOS ===
+
+  /**
+   * Analizar sentimientos de textos usando Azure Cognitive Services
+   */
+  static async analizarSentimientos(req, res, next) {
+    try {
+      const { textos } = req.body;
+
+      // Validaciones
+      if (!textos || !Array.isArray(textos)) {
+        return res.status(400).json({
+          success: false,
+          error: 'BadRequest',
+          message: 'Se requiere un array de textos para analizar'
+        });
+      }
+
+      if (textos.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'BadRequest',
+          message: 'El array de textos no puede estar vacío'
+        });
+      }
+
+      if (textos.length > 10) {
+        return res.status(400).json({
+          success: false,
+          error: 'BadRequest',
+          message: 'Máximo 10 textos por solicitud'
+        });
+      }
+
+      // Validar que todos los textos sean strings válidos
+      const textosValidos = textos.filter(texto => 
+        typeof texto === 'string' && texto.trim().length > 0
+      );
+
+      if (textosValidos.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'BadRequest',
+          message: 'Todos los textos deben ser strings válidos y no vacíos'
+        });
+      }
+
+      // Log de la solicitud
+      console.log(`🧠 Iniciando análisis de sentimientos para ${textosValidos.length} texto(s)`);
+      
+      // Llamar al servicio de Azure a través del modelo
+      const startTime = Date.now();
+      const resultado = await EvaluacionModel.analyzeSentiments(textosValidos);
+      const endTime = Date.now();
+      
+      console.log(`✅ Análisis completado en ${endTime - startTime}ms`);
+
+      // Formatear respuesta
+      const respuesta = {
+        totalTextos: textosValidos.length,
+        resultados: resultado.documents?.map(doc => ({
+          id: doc.id,
+          texto: doc.sentences?.[0]?.text || 'Sin texto',
+          sentimiento: doc.sentiment || 'Desconocido',
+          confianza: {
+            positivo: doc.confidenceScores?.positive ? (doc.confidenceScores.positive * 100).toFixed(2) + '%' : '0.00%',
+            neutral: doc.confidenceScores?.neutral ? (doc.confidenceScores.neutral * 100).toFixed(2) + '%' : '0.00%',
+            negativo: doc.confidenceScores?.negative ? (doc.confidenceScores.negative * 100).toFixed(2) + '%' : '0.00%'
+          },
+          puntuaciones: doc.confidenceScores || {}
+        })) || [],
+        respuestaCompleta: resultado
+      };
+
+      res.status(200).json({
+        success: true,
+        data: respuesta,
+        message: `Análisis de sentimientos completado para ${textosValidos.length} texto(s)`
+      });
+
+    } catch (error) {
+      console.error('🔥 Error en analizarSentimientos:', error.message);
+      
+      // Manejo específico de errores de Azure y timeouts
+      if (error.message.includes('Timeout') || error.message.includes('timeout')) {
+        return res.status(408).json({
+          success: false,
+          error: 'RequestTimeout',
+          message: 'El servicio de análisis tardó demasiado en responder. Intenta con menos textos o espera unos momentos.',
+          suggestion: 'Reduce la cantidad de textos o intenta de nuevo en unos segundos'
+        });
+      }
+
+      if (error.message.includes('Rate limit') || error.message.includes('429')) {
+        return res.status(429).json({
+          success: false,
+          error: 'RateLimitExceeded',
+          message: 'Límite de solicitudes de Azure alcanzado. Espera unos segundos antes de intentar de nuevo.',
+          retryAfter: 5
+        });
+      }
+
+      if (error.message.includes('Clave de Azure inválida') || error.message.includes('401')) {
+        return res.status(500).json({
+          success: false,
+          error: 'AuthenticationError',
+          message: 'Error de autenticación con Azure. Contacta al administrador.'
+        });
+      }
+
+      if (error.message.includes('Servicio de Azure temporalmente') || error.message.includes('503')) {
+        return res.status(503).json({
+          success: false,
+          error: 'ServiceUnavailable',
+          message: 'El servicio de Azure está temporalmente no disponible. Intenta de nuevo en unos minutos.'
+        });
+      }
+
+      if (error.message.includes('Error de conexión')) {
+        return res.status(502).json({
+          success: false,
+          error: 'ConnectionError',
+          message: 'No se pudo conectar con el servicio de análisis de sentimientos. Verifica tu conexión a internet.',
+          suggestion: 'Intenta de nuevo en unos momentos'
+        });
+      }
+
+      if (error.message.includes('Azure API Error')) {
+        return res.status(502).json({
+          success: false,
+          error: 'BadGateway',
+          message: 'Error al comunicarse con el servicio de Azure',
+          details: error.message
+        });
+      }
+
+      if (error.message.includes('Configuración de Azure')) {
+        return res.status(500).json({
+          success: false,
+          error: 'InternalServerError',
+          message: 'Configuración del servicio de análisis de sentimientos no disponible'
+        });
+      }
+
+      // Error genérico
+      next(error);
+    }
+  }
 }
 
 module.exports = EvaluacionController;

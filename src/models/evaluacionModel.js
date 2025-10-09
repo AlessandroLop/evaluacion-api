@@ -274,6 +274,171 @@ class EvaluacionModel {
     });
     return curso !== null;
   }
+
+  // === MÉTODOS PARA ANÁLISIS DE SENTIMIENTOS ===
+
+  /**
+   * Cache simple para resultados de análisis de sentimientos
+   */
+  static sentimentCache = new Map();
+  static cacheMaxSize = 100;
+  static cacheTimeout = 1000 * 60 * 15; // 15 minutos
+
+  /**
+   * Generar clave de cache para textos
+   */
+  static generateCacheKey(texts) {
+    return JSON.stringify(texts.map(t => t.trim().toLowerCase()).sort());
+  }
+
+  /**
+   * Limpiar cache antiguo
+   */
+  static cleanCache() {
+    const now = Date.now();
+    for (const [key, value] of this.sentimentCache.entries()) {
+      if (now - value.timestamp > this.cacheTimeout) {
+        this.sentimentCache.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Crear timeout personalizado para fetch
+   */
+  static createFetchWithTimeout(timeoutMs = 15000) {
+    return async (url, options) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Timeout: Azure Cognitive Services no respondió a tiempo');
+        }
+        throw error;
+      }
+    };
+  }
+
+  /**
+   * Analizar sentimientos usando Azure Cognitive Services con optimizaciones
+   * @param {Array} texts - Array de textos para analizar
+   * @returns {Promise<Object>} - Resultado del análisis de sentimientos
+   */
+  static async analyzeSentiments(texts) {
+    const endpoint = process.env.AZURE_TEXT_ANALYTICS_ENDPOINT;
+    const subscriptionKey = process.env.AZURE_TEXT_ANALYTICS_KEY;
+    
+    if (!endpoint || !subscriptionKey) {
+      throw new Error('Configuración de Azure Text Analytics no encontrada');
+    }
+
+    // Generar clave de cache
+    const cacheKey = this.generateCacheKey(texts);
+    
+    // Limpiar cache antiguo
+    this.cleanCache();
+    
+    // Verificar cache
+    if (this.sentimentCache.has(cacheKey)) {
+      const cached = this.sentimentCache.get(cacheKey);
+      console.log('📋 Usando resultado desde cache para análisis de sentimientos');
+      return cached.data;
+    }
+
+    const url = `${endpoint}text/analytics/v3.1/sentiment?language=es`;
+    
+    // Preparar documentos para Azure (máximo 10 documentos por request)
+    const documents = texts.map((text, index) => ({
+      id: (index + 1).toString(),
+      text: text.trim()
+    }));
+
+    const requestBody = { documents };
+
+    try {
+      console.log('🔄 Iniciando análisis de sentimientos con Azure...');
+      const startTime = Date.now();
+      
+      // Crear fetch con timeout personalizado
+      const fetchWithTimeout = this.createFetchWithTimeout(15000); // 15 segundos
+      
+      const response = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: {
+          'Ocp-Apim-Subscription-Key': subscriptionKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      const endTime = Date.now();
+      console.log(`⏱️ Azure respondió en ${endTime - startTime}ms`);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        
+        // Manejo específico de rate limiting
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After') || 2;
+          throw new Error(`Rate limit alcanzado. Espera ${retryAfter} segundos antes de hacer otra solicitud.`);
+        }
+        
+        // Manejo de otros errores de Azure
+        if (response.status === 401) {
+          throw new Error('Clave de Azure inválida o expirada');
+        }
+        
+        if (response.status === 503) {
+          throw new Error('Servicio de Azure temporalmente no disponible');
+        }
+        
+        throw new Error(`Azure API Error: ${response.status} - ${errorData}`);
+      }
+
+      const data = await response.json();
+      
+      // Validar respuesta de Azure
+      if (!data || !data.documents) {
+        throw new Error('Respuesta inválida de Azure Cognitive Services');
+      }
+
+      // Guardar en cache si el cache no está lleno
+      if (this.sentimentCache.size < this.cacheMaxSize) {
+        this.sentimentCache.set(cacheKey, {
+          data: data,
+          timestamp: Date.now()
+        });
+        console.log('💾 Resultado guardado en cache');
+      }
+
+      console.log('✅ Análisis de sentimientos completado exitosamente');
+      return data;
+      
+    } catch (error) {
+      console.error('❌ Error en análisis de sentimientos:', error.message);
+      
+      // Re-lanzar con mensaje más específico
+      if (error.message.includes('fetch')) {
+        throw new Error('Error de conexión con Azure Cognitive Services');
+      }
+      
+      if (error.message.includes('Timeout')) {
+        throw new Error('El servicio de Azure tardó demasiado en responder. Intenta de nuevo.');
+      }
+      
+      throw error;
+    }
+  }
 }
 
 module.exports = EvaluacionModel;

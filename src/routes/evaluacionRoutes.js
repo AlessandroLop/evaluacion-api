@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const EvaluacionController = require('../controllers/evaluacionController');
 const { validateEvaluacion, validateId } = require('../middlewares/validation');
+const sentimentRateLimiter = require('../middlewares/rateLimiter');
 
 /**
  * @swagger
@@ -278,6 +279,76 @@ const { validateEvaluacion, validateId } = require('../middlewares/validation');
  *             nombreCompleto:
  *               type: string
  *               example: "Dr. Carlos Mendoza"
+ *     
+ *     AnalisisSentimientos:
+ *       type: object
+ *       description: Resultado del análisis de sentimientos
+ *       properties:
+ *         totalTextos:
+ *           type: integer
+ *           description: Número total de textos analizados
+ *           example: 3
+ *         resultados:
+ *           type: array
+ *           description: Resultados del análisis para cada texto
+ *           items:
+ *             $ref: '#/components/schemas/ResultadoSentimiento'
+ *         respuestaCompleta:
+ *           type: object
+ *           description: Respuesta completa de Azure Cognitive Services
+ *     
+ *     ResultadoSentimiento:
+ *       type: object
+ *       description: Resultado del análisis de sentimiento para un texto específico
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: ID del texto analizado
+ *           example: "1"
+ *         texto:
+ *           type: string
+ *           description: Texto que fue analizado
+ *           example: "El profesor explica muy bien las clases"
+ *         sentimiento:
+ *           type: string
+ *           enum: [positive, negative, neutral]
+ *           description: Sentimiento detectado
+ *           example: "positive"
+ *         confianza:
+ *           type: object
+ *           description: Niveles de confianza formateados como porcentajes
+ *           properties:
+ *             positivo:
+ *               type: string
+ *               example: "89.45%"
+ *             neutral:
+ *               type: string
+ *               example: "8.32%"
+ *             negativo:
+ *               type: string
+ *               example: "2.23%"
+ *         puntuaciones:
+ *           type: object
+ *           description: Puntuaciones originales de confianza (0-1)
+ *           properties:
+ *             positive:
+ *               type: number
+ *               format: float
+ *               minimum: 0
+ *               maximum: 1
+ *               example: 0.8945
+ *             neutral:
+ *               type: number
+ *               format: float
+ *               minimum: 0
+ *               maximum: 1
+ *               example: 0.0832
+ *             negative:
+ *               type: number
+ *               format: float
+ *               minimum: 0
+ *               maximum: 1
+ *               example: 0.0223
  *     
  *     ApiResponse:
  *       type: object
@@ -756,5 +827,136 @@ router.get('/cursos/:cursoId/comentarios', EvaluacionController.getComentariosPo
  *               message: "No se puede conectar con la base de datos"
  */
 router.get('/health', EvaluacionController.healthCheck);
+
+// ===== RUTAS DE ANÁLISIS DE SENTIMIENTOS =====
+
+/**
+ * @swagger
+ * /api/evaluaciones/sentimientos:
+ *   post:
+ *     summary: Analizar sentimientos de textos
+ *     description: |
+ *       Analiza los sentimientos de uno o múltiples textos usando Azure Cognitive Services.
+ *       Utiliza el servicio Text Analytics de Azure para determinar si el sentimiento es
+ *       positivo, neutral o negativo, junto con niveles de confianza.
+ *       
+ *       **Características:**
+ *       - Análisis en español (configurado por defecto)
+ *       - Máximo 10 textos por solicitud
+ *       - Niveles de confianza para cada sentimiento
+ *       - Integración segura con Azure (claves en backend)
+ *       - Validación completa de entrada
+ *       
+ *       **Casos de uso:**
+ *       - Análisis de comentarios de evaluaciones
+ *       - Evaluación de feedback estudiantil
+ *       - Monitoreo de satisfacción
+ *       - Investigación de sentimientos académicos
+ *     tags: [🧠 Inteligencia Artificial]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - textos
+ *             properties:
+ *               textos:
+ *                 type: array
+ *                 description: Array de textos para analizar (máximo 10)
+ *                 items:
+ *                   type: string
+ *                   minLength: 1
+ *                 minItems: 1
+ *                 maxItems: 10
+ *                 example:
+ *                   - "El profesor explica muy bien las clases"
+ *                   - "No me gustó la metodología utilizada"
+ *                   - "Excelente dominio del tema y muy puntual"
+ *           example:
+ *             textos:
+ *               - "El profesor explica muy bien las clases y siempre está disponible para resolver dudas"
+ *               - "No me gustó la metodología utilizada, muy confusa"
+ *               - "Excelente dominio del tema y muy puntual en sus horarios"
+ *     responses:
+ *       200:
+ *         description: Análisis de sentimientos completado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalisisSentimientos'
+ *             example:
+ *               success: true
+ *               message: "Análisis de sentimientos completado para 3 texto(s)"
+ *               data:
+ *                 totalTextos: 3
+ *                 resultados:
+ *                   - id: "1"
+ *                     texto: "El profesor explica muy bien las clases y siempre está disponible para resolver dudas"
+ *                     sentimiento: "positive"
+ *                     confianza:
+ *                       positivo: "89.45%"
+ *                       neutral: "8.32%"
+ *                       negativo: "2.23%"
+ *                   - id: "2"
+ *                     texto: "No me gustó la metodología utilizada, muy confusa"
+ *                     sentimiento: "negative"
+ *                     confianza:
+ *                       positivo: "5.12%"
+ *                       neutral: "15.67%"
+ *                       negativo: "79.21%"
+ *       400:
+ *         description: Datos de entrada inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             examples:
+ *               arrayVacio:
+ *                 summary: Array vacío
+ *                 value:
+ *                   success: false
+ *                   error: "BadRequest"
+ *                   message: "El array de textos no puede estar vacío"
+ *               demasiadosTextos:
+ *                 summary: Demasiados textos
+ *                 value:
+ *                   success: false
+ *                   error: "BadRequest"
+ *                   message: "Máximo 10 textos por solicitud"
+ *               formatoInvalido:
+ *                 summary: Formato inválido
+ *                 value:
+ *                   success: false
+ *                   error: "BadRequest"
+ *                   message: "Se requiere un array de textos para analizar"
+ *       502:
+ *         description: Error de comunicación con Azure
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               error: "BadGateway"
+ *               message: "Error al comunicarse con el servicio de Azure"
+ *       500:
+ *         description: Error de configuración del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               error: "InternalServerError"
+ *               message: "Configuración del servicio de análisis de sentimientos no disponible"
+ */
+router.post('/sentimientos', sentimentRateLimiter.middleware(), EvaluacionController.analizarSentimientos);
 
 module.exports = router;

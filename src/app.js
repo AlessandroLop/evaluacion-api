@@ -40,8 +40,16 @@ const swaggerOptions = {
         description: 'Endpoints para el formulario de evaluación'
       },
       {
+        name: '📊 Comentarios',
+        description: 'Endpoints para obtener comentarios de evaluaciones'
+      },
+      {
         name: '📊 Estadísticas',
         description: 'Endpoints para estadísticas y reportes'
+      },
+      {
+        name: '🧠 Inteligencia Artificial',
+        description: 'Endpoints de análisis de sentimientos con Azure Cognitive Services'
       },
       {
         name: '🔧 Sistema',
@@ -90,7 +98,8 @@ app.get('/', (req, res) => {
         documentacion: `/docs`,
         api_spec: `/api-docs.json`,
         evaluaciones: `/api/evaluaciones`,
-        health: `/api/evaluaciones/health`
+        health: `/api/evaluaciones/health`,
+        IA: `/api/evaluaciones/analyze-sentimentos`
       },
       database: 'Supabase + Prisma ORM',
       pattern: 'MVC (Model-View-Controller)'
