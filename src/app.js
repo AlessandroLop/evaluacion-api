@@ -99,7 +99,7 @@ app.get('/', (req, res) => {
         api_spec: `/api-docs.json`,
         evaluaciones: `/api/evaluaciones`,
         health: `/api/evaluaciones/health`,
-        IA: `/api/evaluaciones/analyze-sentimentos`
+        IA: `/api/evaluaciones/sentimentos`
       },
       database: 'Supabase + Prisma ORM',
       pattern: 'MVC (Model-View-Controller)'
