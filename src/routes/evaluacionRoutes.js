@@ -677,6 +677,91 @@ router.get('/estadisticas', EvaluacionController.getEstadisticas);
 router.get('/estadisticas/seminarios', EvaluacionController.getEstadisticasPorSeminario);
 
 // ===== RUTAS DE COMENTARIOS =====
+/**
+ * @swagger
+ * /api/evaluaciones/catedraticos/{catedraticoId}/comentarios:
+ *   get:
+ *     summary: Obtener comentarios de evaluaciones por catedrático (todos sus cursos)
+ *     description: |
+ *       Retorna todos los comentarios de las evaluaciones realizadas para todos los cursos de un catedrático específico.
+ *       - Comentarios ordenados por fecha de evaluación (más recientes primero)
+ *       - Incluye información del curso evaluado
+ *       - Metadatos sobre el total de comentarios y el catedrático
+ *     tags: [📊 Comentarios]
+ *     parameters:
+ *       - in: path
+ *         name: catedraticoId
+ *         required: true
+ *         description: ID único del catedrático para obtener comentarios
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         example: 5
+ *     responses:
+ *       200:
+ *         description: Comentarios obtenidos exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ComentarioEvaluacion'
+ *                     meta:
+ *                       type: object
+ *                       properties:
+ *                         totalComentarios:
+ *                           type: integer
+ *                           example: 3
+ *                         catedraticoId:
+ *                           type: integer
+ *                           example: 5
+ *             example:
+ *               success: true
+ *               message: "Comentarios obtenidos exitosamente para el catedrático: DANY OTONIEL OLIVA BELTETON"
+ *               data:
+ *                 - evaluacionId: 15
+ *                   comentarios: "Excelente profesor, muy claro en sus explicaciones y siempre dispuesto a ayudar."
+ *                   fechaEvaluacion: "2024-12-10T14:30:00.000Z"
+ *                   curso:
+ *                     cursoId: 1
+ *                     nombreCurso: "Desarrollo Web Frontend"
+ *                     seminario: "Seminario de Programación"
+ *               meta:
+ *                 totalComentarios: 3
+ *                 catedraticoId: 5
+ *       400:
+ *         description: Parámetros inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               error: "BadRequest"
+ *               message: "El catedraticoId debe ser un número entero válido"
+ *       404:
+ *         description: Catedrático no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               error: "NotFound"
+ *               message: "No se encontró el catedrático con ID: 999"
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/catedraticos/:catedraticoId/comentarios', EvaluacionController.getComentariosPorCatedratico);
 
 /**
  * @swagger

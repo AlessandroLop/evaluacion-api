@@ -2,6 +2,33 @@
 const EvaluacionModel = require('../models/evaluacionModel');
 
 class EvaluacionController {
+  /**
+   * Obtener comentarios de evaluaciones por catedrático (todos sus cursos)
+   */
+  static async getComentariosPorCatedratico(req, res, next) {
+    try {
+      const { catedraticoId } = req.params;
+      if (!catedraticoId || isNaN(parseInt(catedraticoId))) {
+        return res.status(400).json({
+          success: false,
+          error: 'ValidationError',
+          message: 'El ID del catedrático debe ser un número válido'
+        });
+      }
+      const comentarios = await EvaluacionModel.getComentariosPorCatedratico(catedraticoId);
+      res.status(200).json({
+        success: true,
+        data: comentarios,
+        message: 'Comentarios obtenidos exitosamente',
+        meta: {
+          totalComentarios: comentarios.length,
+          catedraticoId: parseInt(catedraticoId)
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
   // === CONTROLADORES PARA EL FORMULARIO ===
 
@@ -42,14 +69,22 @@ class EvaluacionController {
    */
   static async crearEvaluacion(req, res, next) {
     try {
-      const { cursoId, comentarios, respuestas } = req.body;
+      const { cursoId, catedraticoId, comentarios, respuestas } = req.body;
 
-      // Verificar que el curso existe
-      const cursoExiste = await EvaluacionModel.verificarCurso(cursoId);
-      if (!cursoExiste) {
+      // Validar que los IDs sean números válidos
+      if (!cursoId || isNaN(parseInt(cursoId)) || !catedraticoId || isNaN(parseInt(catedraticoId))) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere cursoId y catedraticoId válidos'
+        });
+      }
+
+      // Verificar que el curso pertenece al catedrático
+      const relacionValida = await EvaluacionModel.verificarCursoDeCatedratico(cursoId, catedraticoId);
+      if (!relacionValida) {
         return res.status(404).json({
           success: false,
-          message: 'El curso especificado no existe'
+          message: 'El curso no pertenece al catedrático especificado'
         });
       }
 

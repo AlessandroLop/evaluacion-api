@@ -2,8 +2,62 @@
 const prisma = require('../config/database');
 
 class EvaluacionModel {
+  /**
+   * Verificar si un curso pertenece a un catedrático
+   */
+  static async verificarCursoDeCatedratico(cursoId, catedraticoId) {
+    try {
+      const curso = await prisma.curso.findFirst({
+        where: {
+          cursoId: parseInt(cursoId),
+          catedraticoId: parseInt(catedraticoId)
+        }
+      });
+      return !!curso;
+    } catch (error) {
+      console.error('Error al verificar relación curso-catedrático:', error);
+      return false;
+    }
+  }
   
   // === MÉTODOS PARA EL FORMULARIO ===
+
+  /**
+   * Obtener comentarios de evaluaciones por catedrático (todos sus cursos)
+   */
+  static async getComentariosPorCatedratico(catedraticoId) {
+    try {
+      // Obtener todos los cursos del catedrático
+      const cursos = await prisma.curso.findMany({
+        where: { catedraticoId: parseInt(catedraticoId) },
+        select: { cursoId: true, nombreCurso: true, seminario: true }
+      });
+      if (cursos.length === 0) return [];
+
+      // Obtener todas las evaluaciones de esos cursos
+      const cursoIds = cursos.map(c => c.cursoId);
+      const evaluaciones = await prisma.evaluacion.findMany({
+        where: { cursoId: { in: cursoIds } },
+        select: {
+          evaluacionId: true,
+          comentarios: true,
+          fechaEvaluacion: true,
+          curso: {
+            select: {
+              cursoId: true,
+              nombreCurso: true,
+              seminario: true
+            }
+          }
+        },
+        orderBy: { fechaEvaluacion: 'desc' }
+      });
+      return evaluaciones;
+    } catch (error) {
+      console.error('Error al obtener comentarios por catedrático:', error);
+      throw new Error('Error al obtener los comentarios del catedrático');
+    }
+  }
   
   /**
    * Obtener todos los catedráticos con sus cursos
@@ -59,10 +113,18 @@ class EvaluacionModel {
           }
         });
 
-        // Crear las respuestas
+        // Obtener los IDs reales de las preguntas (ordenados por preguntaId asc)
+        const preguntas = await tx.pregunta.findMany({
+          orderBy: { preguntaId: 'asc' }
+        });
+        if (preguntas.length !== respuestas.length) {
+          throw new Error('El número de respuestas no coincide con el número de preguntas');
+        }
+
+        // Crear las respuestas usando los IDs reales
         const respuestasData = respuestas.map((puntuacion, index) => ({
           evaluacionId: evaluacion.evaluacionId,
-          preguntaId: index + 1, // Las preguntas tienen IDs del 1 al 5
+          preguntaId: preguntas[index].preguntaId,
           puntuacion: parseInt(puntuacion)
         }));
 
