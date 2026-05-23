@@ -4,11 +4,11 @@ API REST completa para gestionar evaluaciones anónimas de catedráticos univers
 
 ## 🌐 **API EN PRODUCCIÓN**
 
-**🔗 URL Base:** `https://evaluacion-api.vercel.app`
+**🔗 URL Base:** 'localhost'
 
-**📚 Documentación Interactiva:** [https://evaluacion-api.vercel.app/docs](https://evaluacion-api.vercel.app/docs)
+**📚 Documentación Interactiva:** [sin documentación operativa](solo local)
 
-**🏥 Health Check:** [https://evaluacion-api.vercel.app/api/evaluaciones/health](https://evaluacion-api.vercel.app/api/evaluaciones/health)
+**🏥 Health Check:** [healt local](healt local)
 
 ## 📋 Características
 
