@@ -96,13 +96,13 @@ NODE_ENV=development
 API_BASE_URL=http://localhost:3001
 
 # Base de datos Supabase
-DATABASE_URL="postgresql://postgres.cgpddxjqmybjtgqzfgmz:Umg1234$$$@aws-1-us-east-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.cgpddxjqmybjtgqzfgmz:Umg1234$$$@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+DATABASE_URL="TU_URL_DATABASE"
+DIRECT_URL="TU_URL_DATABASE"
 ```
 
 #### 🌍 **Configuración de dominios permitidos (CORS):**
 
-Para mayor seguridad, puedes especificar exactamente qué dominios pueden hacer peticiones a tu API:
+Para mayor seguridad, puedes especificar exactamente qué dominios pueden hacer peticiones al API:
 
 ```env
 # Dominios permitidos (separados por comas)
